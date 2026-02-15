@@ -1,5 +1,6 @@
 package com.beatyesterday.domain.common
 
+/** Metric vs Imperial unit system. Defaults to METRIC; imperial is ready for future use. */
 enum class UnitSystem {
     METRIC,
     IMPERIAL;

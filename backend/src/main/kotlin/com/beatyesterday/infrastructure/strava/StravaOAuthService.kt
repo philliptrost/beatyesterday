@@ -6,6 +6,10 @@ import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestClient
 
+/**
+ * Manages Strava OAuth2 tokens. Caches the access token in memory for the session.
+ * Strava tokens expire after 6 hours.
+ */
 @Service
 class StravaOAuthService(
     @Value("\${strava.client-id}") val clientId: String,
@@ -15,6 +19,8 @@ class StravaOAuthService(
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
     private val restClient = RestClient.create()
+    // Simple in-memory cache -- fine for single-instance MVP.
+    // For multi-instance deployment, move to Redis or DB.
     private var cachedAccessToken: String? = null
 
     /**
@@ -47,7 +53,7 @@ class StravaOAuthService(
 
     /**
      * Exchanges an authorization code for a refresh token.
-     * Used during the initial OAuth setup flow.
+     * Used during initial OAuth setup -- not needed once you have a refresh token.
      */
     fun exchangeCodeForTokens(code: String): Map<String, Any> {
         val response = restClient.post()

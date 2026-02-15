@@ -3,6 +3,7 @@ package com.beatyesterday.web.dto
 import com.beatyesterday.domain.activity.Activity
 import java.time.Instant
 
+/** Lightweight activity data for list views — omits heavy fields like polyline and description. */
 data class ActivitySummaryDto(
     val id: String,
     val startDateTime: Instant,
@@ -45,6 +46,7 @@ data class ActivitySummaryDto(
     }
 }
 
+/** Full activity data for the detail page — includes all fields. */
 data class ActivityDetailDto(
     val id: String,
     val startDateTime: Instant,

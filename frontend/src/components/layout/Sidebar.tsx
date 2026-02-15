@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 
+// Navigation items for the sidebar. The 'end' prop on NavLink ensures '/' only matches exactly (not '/activities').
 const navItems = [
   { to: '/', label: 'Dashboard', icon: '📊' },
   { to: '/activities', label: 'Activities', icon: '🏃' },

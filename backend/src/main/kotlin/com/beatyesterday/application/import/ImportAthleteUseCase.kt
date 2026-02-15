@@ -6,6 +6,13 @@ import com.beatyesterday.domain.strava.StravaClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
+/**
+ * Simplest import use case — fetches the authenticated athlete's profile from Strava
+ * and upserts it into the local database.
+ *
+ * Always runs first in the import pipeline so the dashboard has profile data
+ * (name, avatar, etc.) to display even before activities finish importing.
+ */
 @Service
 class ImportAthleteUseCase(
     private val stravaClient: StravaClient,

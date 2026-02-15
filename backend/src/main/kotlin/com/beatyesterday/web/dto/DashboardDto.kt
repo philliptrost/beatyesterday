@@ -1,5 +1,11 @@
 package com.beatyesterday.web.dto
 
+/**
+ * DTOs (Data Transfer Objects) for the dashboard endpoint. These define the exact JSON shape
+ * sent to the frontend — keeping DTOs separate from domain models lets us control the API
+ * contract independently.
+ */
+
 data class DashboardDto(
     val athlete: AthleteDto?,
     val recentActivities: List<ActivitySummaryDto>,

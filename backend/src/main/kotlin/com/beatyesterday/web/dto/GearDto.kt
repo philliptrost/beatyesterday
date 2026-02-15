@@ -2,6 +2,7 @@ package com.beatyesterday.web.dto
 
 import com.beatyesterday.domain.gear.Gear
 
+/** DTO for gear items. Includes both distanceKm and distanceM so the frontend can display either without conversion. */
 data class GearDto(
     val id: String,
     val name: String,

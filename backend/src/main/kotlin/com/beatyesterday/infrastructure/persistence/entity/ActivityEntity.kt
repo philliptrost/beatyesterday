@@ -7,6 +7,11 @@ import jakarta.persistence.Index
 import jakarta.persistence.Table
 import java.time.Instant
 
+/**
+ * JPA entity mapping to the "activity" table. This is separate from the domain Activity
+ * to keep persistence concerns out of the domain layer. Indexes on start_date_time,
+ * sport_type, and gear_id for common query patterns.
+ */
 @Entity
 @Table(
     name = "activity",

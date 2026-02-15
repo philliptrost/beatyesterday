@@ -1,3 +1,4 @@
+// Root layout: fixed sidebar + scrollable content area. Routes map URL paths to page components.
 import { Routes, Route } from 'react-router-dom';
 import Sidebar from './components/layout/Sidebar';
 import Dashboard from './pages/Dashboard';

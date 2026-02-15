@@ -1,7 +1,16 @@
+/**
+ * Centralized API client — all backend calls go through here.
+ * The /api prefix is proxied to localhost:8080 by Vite during development (see vite.config.ts).
+ * In production, the frontend is served from the same origin so no proxy is needed.
+ */
 import type { ActivityDetail, Dashboard, GearItem, Page, ActivitySummary } from '../types';
 
 const API_BASE = '/api';
 
+/**
+ * Generic fetch wrapper with JSON parsing and error handling.
+ * All API methods return typed responses.
+ */
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${url}`, {
     headers: { 'Content-Type': 'application/json' },

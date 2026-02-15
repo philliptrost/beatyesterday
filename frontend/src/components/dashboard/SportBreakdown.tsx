@@ -5,9 +5,11 @@ interface Props {
   data: SportBreakdownType[];
 }
 
+// Chart colors — Strava orange first, then a palette of distinct colors.
 const COLORS = ['#FC4C02', '#1e3a5f', '#2563eb', '#16a34a', '#d97706', '#dc2626', '#7c3aed', '#0891b2'];
 
 export default function SportBreakdown({ data }: Props) {
+  // Limits to top 8 sport types to keep the pie chart readable. Remaining types are excluded.
   const chartData = data.slice(0, 8).map((s) => ({
     name: s.displayName,
     value: s.activityCount,

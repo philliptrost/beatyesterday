@@ -58,6 +58,7 @@ export default function ActivityDetail() {
         <StatCard label="Avg Speed" value={activity.averageSpeedKmh.toFixed(1)} unit="km/h" />
       </div>
 
+      {/* Only renders stat cards for metrics that exist — e.g. power only shows if the athlete has a power meter. */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {activity.averageHeartRate && (
           <StatCard label="Avg Heart Rate" value={activity.averageHeartRate} unit="bpm" />

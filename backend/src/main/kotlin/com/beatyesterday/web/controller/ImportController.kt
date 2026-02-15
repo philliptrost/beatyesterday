@@ -6,6 +6,11 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
+/**
+ * Single endpoint to trigger a full Strava data import. The import runs synchronously —
+ * the frontend shows a loading state while waiting.
+ * TODO: For large accounts, consider making this async with a progress endpoint.
+ */
 @RestController
 @RequestMapping("/api/import")
 class ImportController(

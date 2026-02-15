@@ -1,5 +1,15 @@
 package com.beatyesterday.domain.activity
 
+/**
+ * Every sport type that Strava supports, mapped to our domain model.
+ *
+ * - [stravaValue] is the exact string returned by the Strava API (e.g., "MountainBikeRide").
+ * - [displayName] is the human-readable label shown in the UI (e.g., "Mountain Bike Rides").
+ * - [activityType] is a higher-level grouping used for charts (e.g., pie chart breakdowns).
+ *
+ * Unknown types from Strava should fall back to [WORKOUT] so the app never crashes
+ * on new sport types that Strava adds before we update this enum.
+ */
 enum class SportType(val stravaValue: String, val displayName: String, val activityType: ActivityType) {
     // Cycling
     RIDE("Ride", "Rides", ActivityType.RIDE),
@@ -81,6 +91,11 @@ enum class SportType(val stravaValue: String, val displayName: String, val activ
     }
 }
 
+/**
+ * Coarse activity grouping used for the pie chart and summary statistics.
+ * Multiple [SportType]s roll up into a single [ActivityType] so the UI
+ * isn't overwhelmed with dozens of slices.
+ */
 enum class ActivityType(val displayName: String) {
     RIDE("Cycling"),
     RUN("Running"),

@@ -1,5 +1,9 @@
 package com.beatyesterday.infrastructure.persistence.mapper
 
+// Extension functions that convert between domain models and JPA entities.
+// This "anti-corruption layer" ensures the domain stays clean -- domain models use
+// value objects (Kilometer, Meter, etc.) while entities use raw primitives for JPA compatibility.
+
 import com.beatyesterday.domain.activity.Activity
 import com.beatyesterday.domain.activity.ActivityId
 import com.beatyesterday.domain.activity.SportType

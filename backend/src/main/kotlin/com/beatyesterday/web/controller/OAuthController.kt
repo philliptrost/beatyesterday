@@ -6,6 +6,10 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
+/**
+ * Handles the Strava OAuth2 flow. The frontend redirects the user to Strava's
+ * authorization page, Strava redirects back with a code, and we exchange it for tokens.
+ */
 @RestController
 @RequestMapping("/api/oauth")
 class OAuthController(
@@ -21,6 +25,8 @@ class OAuthController(
             "?client_id=${stravaOAuthService.clientId}" +
             "&response_type=code" +
             "&redirect_uri=$redirectUri" +
+            // read = public profile, activity:read_all = all activities including private,
+            // profile:read_all = full profile details.
             "&scope=read,activity:read_all,profile:read_all" +
             "&approval_prompt=auto"
 

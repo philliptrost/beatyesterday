@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 
+// MVP settings page — shows Strava connection status.
+// TODO: Add unit preferences (metric/imperial), timezone selection, data export options.
 export default function Settings() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
 

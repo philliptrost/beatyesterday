@@ -33,6 +33,7 @@ export default function Gear() {
         {gear.map((item) => (
           <div
             key={item.id}
+            // Retired gear is visually dimmed to differentiate from active equipment.
             className={`bg-white rounded-xl shadow-sm border border-gray-100 p-5 ${
               item.isRetired ? 'opacity-60' : ''
             }`}

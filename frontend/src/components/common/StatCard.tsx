@@ -1,3 +1,7 @@
+/**
+ * Reusable KPI card used across Dashboard and ActivityDetail pages.
+ * Handles both numeric formatting (toLocaleString) and pre-formatted string values.
+ */
 interface StatCardProps {
   label: string;
   value: string | number;

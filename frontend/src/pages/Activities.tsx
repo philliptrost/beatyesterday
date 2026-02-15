@@ -10,6 +10,7 @@ export default function Activities() {
   const [loading, setLoading] = useState(true);
   const [sportFilter, setSportFilter] = useState<string>('');
 
+  // Re-fetches when page or sport filter changes. The backend handles sorting and pagination.
   useEffect(() => {
     setLoading(true);
     api.getActivities(page, 50, 'startDateTime', 'desc', sportFilter || undefined)
@@ -24,6 +25,7 @@ export default function Activities() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Activities</h1>
+        {/* MVP: hardcoded sport types. TODO: Fetch available sport types from the backend dynamically. */}
         <select
           value={sportFilter}
           onChange={(e) => { setSportFilter(e.target.value); setPage(0); }}

@@ -2,6 +2,17 @@ package com.beatyesterday.domain.athlete
 
 import java.time.LocalDate
 
+// TODO: Multi-user support will require adding authentication (OAuth per user)
+//  and scoping all queries by athlete ID to ensure data isolation.
+
+/**
+ * Represents the Strava athlete. Currently single-tenant (one athlete only).
+ *
+ * [rawData] stores the full Strava API JSON response as JSONB in Postgres,
+ * preserving fields we don't model yet for future use.
+ *
+ * [birthDate] is usually null because Strava rarely provides it in the API response.
+ */
 data class Athlete(
     val id: String,
     val firstName: String,

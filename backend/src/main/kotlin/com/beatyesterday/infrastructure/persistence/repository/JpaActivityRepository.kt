@@ -10,6 +10,11 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Repository
 
+/**
+ * "Adapter" that bridges the domain's ActivityRepository interface to Spring Data JPA.
+ * This is the hexagonal architecture pattern -- the domain defines the port (interface),
+ * and this class is the adapter (implementation).
+ */
 @Repository
 class JpaActivityRepository(
     private val springDataRepo: SpringDataActivityRepository,

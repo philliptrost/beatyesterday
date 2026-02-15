@@ -16,6 +16,10 @@ import org.springframework.web.bind.annotation.RestController
 import java.time.Month
 import java.time.ZoneId
 
+/**
+ * Aggregates data from multiple repositories into a single dashboard response.
+ * This avoids N+1 API calls from the frontend — one request gets everything the dashboard needs.
+ */
 @RestController
 @RequestMapping("/api/dashboard")
 class DashboardController(
@@ -29,13 +33,15 @@ class DashboardController(
         val recentPageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "startDateTime"))
         val recentActivities = activityRepository.findAll(recentPageable).content
 
-        // Load more for stats (up to 10000 for a personal dashboard)
+        // MVP approach — loads up to 10K activities into memory for aggregation.
+        // For large datasets, this should be replaced with SQL-level GROUP BY queries.
         val allPageable = PageRequest.of(0, 10000, Sort.by(Sort.Direction.DESC, "startDateTime"))
         val allActivities = activityRepository.findAll(allPageable).content
 
         val athlete = athleteRepository.find()
 
-        // Monthly stats (current year)
+        // Groups activities by year+month and computes totals.
+        // ZoneId.systemDefault() converts UTC timestamps to the server's timezone.
         val monthlyStats = allActivities
             .groupBy {
                 val zoned = it.startDateTime.atZone(ZoneId.systemDefault())

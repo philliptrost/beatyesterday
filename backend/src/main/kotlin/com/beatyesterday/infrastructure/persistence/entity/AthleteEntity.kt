@@ -8,6 +8,10 @@ import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.time.LocalDate
 
+/**
+ * JPA entity for the athlete table. rawData uses Hibernate's @JdbcTypeCode(SqlTypes.JSON)
+ * to map to PostgreSQL's JSONB column type.
+ */
 @Entity
 @Table(name = "athlete")
 class AthleteEntity(

@@ -1,5 +1,12 @@
 package com.beatyesterday.domain.common
 
+/**
+ * Value class for distances in kilometers. Using a value class instead of a raw Double
+ * prevents accidentally mixing up units (e.g., passing meters where km is expected).
+ * Supports conversion to miles for future imperial mode via [toMiles].
+ *
+ * @JvmInline means no runtime allocation overhead -- the JVM sees a plain Double.
+ */
 @JvmInline
 value class Kilometer(val value: Double) : Comparable<Kilometer> {
     fun toMiles(): Double = value * MILES_FACTOR

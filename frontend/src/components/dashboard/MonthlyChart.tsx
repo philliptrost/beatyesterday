@@ -6,7 +6,7 @@ interface Props {
 }
 
 export default function MonthlyChart({ data }: Props) {
-  // Show only the most recent 12 months
+  // Shows only the last 12 months to keep the chart readable.
   const chartData = data.slice(-12).map((m) => ({
     name: `${m.monthName.slice(0, 3)} ${m.year}`,
     distance: Math.round(m.totalDistanceKm),

@@ -1,5 +1,6 @@
 package com.beatyesterday.domain.common
 
+/** Value object for elevation/altitude in meters. Converts to feet for imperial via [toFeet]. */
 @JvmInline
 value class Meter(val value: Double) : Comparable<Meter> {
     fun toKilometer(): Kilometer = Kilometer(value / 1000.0)

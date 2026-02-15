@@ -15,6 +15,7 @@ export default function Dashboard() {
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Fetch dashboard data on mount — single API call gets everything (athlete, stats, recent activities).
   useEffect(() => {
     api.getDashboard()
       .then(setData)
@@ -22,6 +23,7 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Triggers a full Strava sync, then refreshes the dashboard to show new data.
   const handleImport = async () => {
     setImporting(true);
     try {

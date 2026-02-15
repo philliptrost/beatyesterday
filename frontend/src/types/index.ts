@@ -1,4 +1,8 @@
-// Types matching backend DTOs
+/**
+ * TypeScript interfaces matching the backend DTOs (Data Transfer Objects).
+ * These must stay in sync with the Kotlin DTOs in backend/src/main/kotlin/com/beatyesterday/web/dto/.
+ * If you change a backend DTO, update the matching interface here.
+ */
 
 export interface ActivitySummary {
   id: string;
@@ -87,6 +91,7 @@ export interface GearItem {
   isRetired: boolean;
 }
 
+/** Matches Spring Data's Page response format for paginated endpoints. */
 export interface Page<T> {
   content: T[];
   totalElements: number;

@@ -9,6 +9,10 @@ import org.springframework.stereotype.Service
 import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.client.RestClient
 
+/**
+ * "Adapter" implementation of the StravaClient port. Uses Spring's RestClient to call
+ * the Strava v3 API. Handles rate limiting (429) with a 60-second sleep and retries.
+ */
 @Service
 class StravaApiClient(
     private val oauthService: StravaOAuthService,
@@ -39,6 +43,8 @@ class StravaApiClient(
         return authorizedGet("/gear/$gearId")
     }
 
+    // Attaches the OAuth Bearer token to every request. Handles rate limiting
+    // (429 -> wait 60s and retry) and not-found (404 -> return empty).
     private fun authorizedGet(path: String): Map<String, Any?> {
         return try {
             restClient.get()
@@ -61,6 +67,8 @@ class StravaApiClient(
         }
     }
 
+    // Separate method from authorizedGet because of Java type erasure — ParameterizedTypeReference
+    // needs the exact generic type (List<Map<...>> vs Map<...>) to deserialize correctly.
     private fun authorizedGetList(path: String): List<Map<String, Any?>> {
         return try {
             restClient.get()

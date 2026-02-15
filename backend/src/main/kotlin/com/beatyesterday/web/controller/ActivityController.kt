@@ -15,12 +15,18 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
+/**
+ * REST endpoints for browsing activities. Supports server-side pagination
+ * and filtering by sport type.
+ */
 @RestController
 @RequestMapping("/api/activities")
 class ActivityController(
     private val activityRepository: ActivityRepository,
 ) {
 
+    // Query params match what Spring Data Pageable expects — the frontend controls
+    // page, size, sort field, and direction.
     @GetMapping
     fun getActivities(
         @RequestParam(defaultValue = "0") page: Int,
@@ -42,6 +48,8 @@ class ActivityController(
         return activities.map { ActivitySummaryDto.from(it) }
     }
 
+    // Returns the raw ActivityId string from the URL path — the domain layer handles
+    // the 'activity-' prefix.
     @GetMapping("/{id}")
     fun getActivity(@PathVariable id: String): ResponseEntity<ActivityDetailDto> {
         val activity = activityRepository.findById(ActivityId(id))

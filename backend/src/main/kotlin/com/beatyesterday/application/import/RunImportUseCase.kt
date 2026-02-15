@@ -5,8 +5,14 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 /**
- * Orchestrates the full import pipeline.
- * Runs each import stage sequentially in the correct order.
+ * Orchestrates the full import pipeline — the top-level "run everything" use case.
+ *
+ * Runs the three import stages sequentially in a fixed order:
+ *   1. Athlete  ->  2. Activities  ->  3. Gear
+ *
+ * Order matters because each stage depends on data from the previous one:
+ *   - Athlete must exist before activities so the dashboard has profile data to display.
+ *   - Activities must exist before gear because gear IDs are discovered from imported activities.
  */
 @Service
 class RunImportUseCase(

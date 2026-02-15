@@ -7,6 +7,15 @@ import com.beatyesterday.domain.strava.StravaClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
+/**
+ * Fetches activities from the Strava API and saves new ones to the local database.
+ *
+ * Supports two modes:
+ *   - Full paginated import (initial sync or periodic refresh): walks through every page
+ *     of the athlete's activity list from Strava.
+ *   - Targeted import by activity IDs: fetches and saves only the specified activities,
+ *     useful for webhook-driven incremental imports.
+ */
 @Service
 class ImportActivitiesUseCase(
     private val stravaClient: StravaClient,
@@ -31,6 +40,8 @@ class ImportActivitiesUseCase(
         var totalImported = 0
         var totalSkipped = 0
 
+        // Paginate through all Strava activities — Strava returns max 200 per page,
+        // empty list means we've reached the end.
         while (true) {
             val rawActivities = stravaClient.getActivities(page = page)
             if (rawActivities.isEmpty()) {
@@ -42,6 +53,7 @@ class ImportActivitiesUseCase(
                 val id = (raw["id"] as? Number)?.toLong() ?: continue
                 val activityId = ActivityId.fromStravaId(id)
 
+                // Idempotency — skip activities already in our DB so re-imports are safe.
                 if (activityRepository.exists(activityId)) {
                     totalSkipped++
                     continue
