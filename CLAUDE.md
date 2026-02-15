@@ -1,96 +1,108 @@
 # Beat Yesterday
 
-A Strava analytics dashboard — full-stack rewrite of the Statistics for Strava PHP app. Import activities from Strava and visualize performance with monthly/yearly stats, gear tracking, and sport breakdowns.
+Strava analytics dashboard — import activities from Strava and visualize performance stats. Full-stack Kotlin/React rewrite of the Statistics for Strava PHP app.
 
 ## Tech Stack
 
-- **Backend:** Kotlin 2.1.0 / Spring Boot 3.4.2 / JDK 21 / Gradle 8.12
-- **Frontend:** React 19 / TypeScript 5.7 / Vite 6 / Tailwind CSS 3.4
+- **Backend:** Kotlin 2.1 / Spring Boot 3.4 / JDK 21 / Gradle 8.12
+- **Frontend:** React 19 / TypeScript 5.7 / Vite 6 / Tailwind CSS 3.4 / Recharts 2.15
 - **Database:** PostgreSQL 16 (Flyway migrations)
-- **Charts:** Recharts 2.15
-- **Testing:** JUnit 5 + MockK (backend), H2 in-memory for test DB
+- **Testing:** JUnit 5 + MockK, H2 in-memory DB (no tests written yet)
+
+## Commands
+
+```bash
+# Backend
+cd backend && ./gradlew bootRun        # Start on :8080
+cd backend && ./gradlew build           # Compile + package
+cd backend && ./gradlew test            # Run tests (H2 in-memory)
+
+# Frontend
+cd frontend && npm install              # Install deps
+cd frontend && npm run dev              # Start on :5173 (proxies /api → :8080)
+cd frontend && npm run build            # tsc + vite production build
+
+# Full stack
+docker-compose up -d                    # PostgreSQL
+docker build -t beat-yesterday .        # Multi-stage: Node 22 → Gradle/JDK 21 → JRE 21 Alpine
+```
 
 ## Architecture
 
-Clean Architecture / Hexagonal pattern:
+Hexagonal / Clean Architecture. Dependencies point inward: infrastructure → application → domain.
 
 ```
-Frontend (React) → REST Controllers → DTOs → Use Cases → Domain Models → Repository Interfaces → JPA Adapters → PostgreSQL
+React SPA → REST Controllers → DTOs → Use Cases → Domain Models → Repository Ports → JPA Adapters → PostgreSQL
 ```
 
-### Backend Layers (`backend/src/main/kotlin/com/beatyesterday/`)
-- `domain/` — Entities, value objects (`Kilometer`, `Meter`, `KmPerHour`, `Coordinate`), repository interfaces
-- `application/import/` — Use cases: `RunImportUseCase` orchestrates athlete → activities → gear import
-- `infrastructure/persistence/` — JPA entities, mappers, Spring Data repositories
-- `infrastructure/strava/` — Strava API client, OAuth service (token refresh, rate limiting)
-- `infrastructure/config/` — Security config, CORS config
-- `web/controller/` — REST endpoints
-- `web/dto/` — API response objects
+### Backend (`backend/src/main/kotlin/com/beatyesterday/`)
 
-### Frontend Structure (`frontend/src/`)
-- `pages/` — Dashboard, Activities, ActivityDetail, Gear, Settings
-- `components/` — layout (Sidebar), dashboard widgets, common (LoadingSpinner, StatCard)
-- `api/client.ts` — Fetch API abstraction
-- `types/index.ts` — TypeScript interfaces matching backend DTOs
+| Layer | Path | Key files |
+|-------|------|-----------|
+| Domain | `domain/` | `Activity`, `Athlete`, `Gear` entities; value objects (`Kilometer`, `Meter`, `KmPerHour`, `Coordinate`); repository port interfaces |
+| Application | `application/import/` | `RunImportUseCase` orchestrates: athlete → activities (paginated) → gear |
+| Infrastructure | `infrastructure/strava/` | `StravaApiClient` (REST + rate limiting), `StravaOAuthService` (token refresh + 6h cache) |
+| Infrastructure | `infrastructure/persistence/` | JPA entities, mappers (anti-corruption layer), Spring Data repos |
+| Infrastructure | `infrastructure/config/` | `SecurityConfig` (permits all — MVP), `WebConfig` (CORS for localhost:5173) |
+| Web | `web/controller/` | REST endpoints: Dashboard, Activities, Gear, Import, OAuth |
+| Web | `web/dto/` | Response DTOs (separate from domain models) |
 
-## Local Development
+### Frontend (`frontend/src/`)
 
-```bash
-# 1. Start PostgreSQL
-docker-compose up -d
-
-# 2. Start backend (port 8080)
-cd backend && ./gradlew bootRun
-
-# 3. Start frontend (port 5173, proxies /api → localhost:8080)
-cd frontend && npm install && npm run dev
-```
-
-## Environment Variables
-
-| Variable | Default | Required |
-|----------|---------|----------|
-| `DB_HOST` | localhost | no |
-| `DB_PORT` | 5432 | no |
-| `DB_NAME` | beatyesterday | no |
-| `DB_USERNAME` | beatyesterday | no |
-| `DB_PASSWORD` | beatyesterday | no |
-| `STRAVA_CLIENT_ID` | — | **yes** |
-| `STRAVA_CLIENT_SECRET` | — | **yes** |
-| `STRAVA_REFRESH_TOKEN` | — | **yes** |
+| Path | Purpose |
+|------|---------|
+| `pages/` | Dashboard, Activities, ActivityDetail, Gear, Settings |
+| `components/` | Sidebar, MonthlyChart, SportBreakdown, StatCard, LoadingSpinner |
+| `api/client.ts` | Generic fetch wrapper using Vite proxy |
+| `types/index.ts` | TypeScript interfaces — must stay in sync with backend DTOs |
 
 ## API Endpoints
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| GET | `/api/dashboard` | Dashboard stats, athlete, recent activities |
-| GET | `/api/activities` | Paginated activities (filterable by sport type) |
+| GET | `/api/dashboard` | Aggregated stats, athlete info, recent activities |
+| GET | `/api/activities?page=&size=&sportType=` | Paginated, filterable activity list |
 | GET | `/api/activities/{id}` | Single activity detail |
-| GET | `/api/gear` | All gear with distance |
-| POST | `/api/import` | Trigger Strava import pipeline |
-| GET | `/api/oauth/strava/url` | Strava OAuth authorization URL |
-| GET | `/api/oauth/strava/callback` | OAuth callback |
+| GET | `/api/gear` | All gear with usage distance |
+| POST | `/api/import` | Trigger Strava import (synchronous) |
+| GET | `/api/oauth/strava/url` | OAuth authorization URL |
+| GET | `/api/oauth/strava/callback` | OAuth callback handler |
 | GET | `/api/oauth/strava/status` | Auth status check |
 
-## Database
+## Environment Variables
 
-Schema managed by Flyway: `backend/src/main/resources/db/migration/`
+| Variable | Default | Required |
+|----------|---------|----------|
+| `STRAVA_CLIENT_ID` | — | **yes** |
+| `STRAVA_CLIENT_SECRET` | — | **yes** |
+| `STRAVA_REFRESH_TOKEN` | — | **yes** |
+| `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USERNAME` / `DB_PASSWORD` | localhost / 5432 / beatyesterday / beatyesterday / beatyesterday | no |
 
-Tables: `athlete`, `activity` (indexed on start_date_time, sport_type, gear_id), `gear`
+## Strava API Quirks
 
-## Docker Production Build
+These are important when touching import or domain code:
 
-```bash
-docker build -t beat-yesterday .
-docker run -p 8080:8080 -e STRAVA_CLIENT_ID=... -e STRAVA_CLIENT_SECRET=... -e STRAVA_REFRESH_TOKEN=... beat-yesterday
-```
-
-Multi-stage Dockerfile: Node 22 (frontend build) → Gradle 8.12/JDK 21 (backend build) → JRE 21 Alpine (runtime). Frontend served from Spring Boot `/static/`.
+- **Speeds** come as m/s — convert to km/h via `* 3.6`
+- **Distances** come as meters — convert to km via `/ 1000`
+- **sport_type** (not `type`) is the correct field — more granular (e.g., `TrailRun` vs `Run`)
+- **Polyline** is nested: `activity.map.summaryPolyline`, not top-level
+- **No "list gear" endpoint** — gear IDs are extracted by scanning imported activities
+- **Rate limiting:** 429 → wait 60s and retry; 404 → return empty (gear may be deleted)
+- **Pagination:** 200 activities/page, loop until page returns < 200
 
 ## Conventions
 
-- Domain entities use value objects (`Kilometer`, `Meter`, etc.) — not raw primitives
-- Import pipeline is idempotent (activities checked by ID before saving)
-- Strava API rate limiting: 60-second backoff on 429 responses
-- CORS allowed for `http://localhost:5173` on all `/api/**` endpoints
+- Domain entities use value objects (`Kilometer`, `Meter`, etc.) — never raw primitives
+- IDs use string prefixes: `"activity-{stravaId}"`, `"gear-{stravaId}"`
+- Import is idempotent — activities checked by ID before insert
+- JPA entities are separate from domain models (mapper functions convert between them)
 - Custom Tailwind colors: `strava` (#FC4C02), `strava-dark` (#E34402)
+- DB schema: Flyway in `backend/src/main/resources/db/migration/` (single migration: `V1__initial_schema.sql`)
+
+## Known MVP Limitations
+
+- **Single-tenant** — one athlete, no auth. SecurityConfig permits all requests.
+- **Synchronous import** — POST `/api/import` blocks until complete
+- **In-memory token cache** — StravaOAuthService; needs Redis/DB for multi-instance
+- **Dashboard aggregation in Kotlin** — loads up to 10K activities into memory instead of SQL aggregation
+- **No tests yet** — test infrastructure is wired but no test files exist
