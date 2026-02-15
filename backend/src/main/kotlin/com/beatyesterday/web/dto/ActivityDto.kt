@@ -1,0 +1,108 @@
+package com.beatyesterday.web.dto
+
+import com.beatyesterday.domain.activity.Activity
+import java.time.Instant
+
+data class ActivitySummaryDto(
+    val id: String,
+    val startDateTime: Instant,
+    val sportType: String,
+    val sportTypeDisplay: String,
+    val activityType: String,
+    val name: String,
+    val distanceKm: Double,
+    val elevationM: Double,
+    val averageSpeedKmh: Double,
+    val averageHeartRate: Int?,
+    val averagePower: Int?,
+    val movingTimeSeconds: Int,
+    val movingTimeFormatted: String,
+    val kudoCount: Int,
+    val isCommute: Boolean,
+    val gearId: String?,
+    val stravaUrl: String,
+) {
+    companion object {
+        fun from(activity: Activity) = ActivitySummaryDto(
+            id = activity.id.value,
+            startDateTime = activity.startDateTime,
+            sportType = activity.sportType.stravaValue,
+            sportTypeDisplay = activity.sportType.displayName,
+            activityType = activity.sportType.activityType.displayName,
+            name = activity.name,
+            distanceKm = activity.distance.value,
+            elevationM = activity.elevation.value,
+            averageSpeedKmh = activity.averageSpeed.value,
+            averageHeartRate = activity.averageHeartRate,
+            averagePower = activity.averagePower,
+            movingTimeSeconds = activity.movingTimeInSeconds,
+            movingTimeFormatted = activity.movingTimeFormatted,
+            kudoCount = activity.kudoCount,
+            isCommute = activity.isCommute,
+            gearId = activity.gearId?.value,
+            stravaUrl = activity.stravaUrl,
+        )
+    }
+}
+
+data class ActivityDetailDto(
+    val id: String,
+    val startDateTime: Instant,
+    val sportType: String,
+    val sportTypeDisplay: String,
+    val activityType: String,
+    val name: String,
+    val description: String?,
+    val distanceKm: Double,
+    val elevationM: Double,
+    val calories: Int?,
+    val averagePower: Int?,
+    val maxPower: Int?,
+    val averageSpeedKmh: Double,
+    val maxSpeedKmh: Double,
+    val averageHeartRate: Int?,
+    val maxHeartRate: Int?,
+    val averageCadence: Int?,
+    val movingTimeSeconds: Int,
+    val movingTimeFormatted: String,
+    val kudoCount: Int,
+    val deviceName: String?,
+    val polyline: String?,
+    val startLatitude: Double?,
+    val startLongitude: Double?,
+    val gearId: String?,
+    val isCommute: Boolean,
+    val stravaUrl: String,
+) {
+    companion object {
+        fun from(activity: Activity) = ActivityDetailDto(
+            id = activity.id.value,
+            startDateTime = activity.startDateTime,
+            sportType = activity.sportType.stravaValue,
+            sportTypeDisplay = activity.sportType.displayName,
+            activityType = activity.sportType.activityType.displayName,
+            name = activity.name,
+            description = activity.description,
+            distanceKm = activity.distance.value,
+            elevationM = activity.elevation.value,
+            calories = activity.calories,
+            averagePower = activity.averagePower,
+            maxPower = activity.maxPower,
+            averageSpeedKmh = activity.averageSpeed.value,
+            maxSpeedKmh = activity.maxSpeed.value,
+            averageHeartRate = activity.averageHeartRate,
+            maxHeartRate = activity.maxHeartRate,
+            averageCadence = activity.averageCadence,
+            movingTimeSeconds = activity.movingTimeInSeconds,
+            movingTimeFormatted = activity.movingTimeFormatted,
+            kudoCount = activity.kudoCount,
+            deviceName = activity.deviceName,
+            polyline = activity.polyline,
+            startLatitude = activity.startingCoordinate?.latitude,
+            startLongitude = activity.startingCoordinate?.longitude,
+            gearId = activity.gearId?.value,
+            isCommute = activity.isCommute,
+            stravaUrl = activity.stravaUrl,
+        )
+    }
+}

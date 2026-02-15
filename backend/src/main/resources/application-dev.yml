@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/beatyesterday
+    username: beatyesterday
+    password: beatyesterday
+
+logging:
+  level:
+    com.beatyesterday: DEBUG
+    org.springframework.web: DEBUG
