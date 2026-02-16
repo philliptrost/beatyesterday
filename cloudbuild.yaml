@@ -1,0 +1,83 @@
+# Cloud Build configuration for Beat Yesterday
+# Builds Docker image and deploys to Cloud Run
+#
+# Usage:
+#   gcloud builds submit --config cloudbuild.yaml --substitutions=_DB_CONNECTION_NAME=PROJECT:REGION:INSTANCE
+#
+# Prerequisites:
+#   - Cloud SQL instance created: beatyesterday-db
+#   - Secrets created in Secret Manager: strava-client-id, strava-client-secret, strava-refresh-token, db-password
+#   - Cloud Run API enabled
+#   - Required IAM permissions for Cloud Build service account
+
+steps:
+  # Step 1: Build Docker image (multi-stage build: Node 22 → Gradle/JDK 21 → JRE 21 Alpine)
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/beat-yesterday:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/beat-yesterday:latest'
+      - '.'
+    timeout: 1200s  # 20 minutes (Gradle + npm can be slow on first build)
+
+  # Step 2: Push image to Google Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/beat-yesterday:$COMMIT_SHA'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/beat-yesterday:latest'
+
+  # Step 3: Deploy to Cloud Run
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'beat-yesterday'
+      - '--image=gcr.io/$PROJECT_ID/beat-yesterday:$COMMIT_SHA'
+      - '--platform=managed'
+      - '--region=us-central1'
+      - '--allow-unauthenticated'
+      - '--add-cloudsql-instances=$_DB_CONNECTION_NAME'
+      - '--set-env-vars=SPRING_PROFILES_ACTIVE=cloudrun'
+      - '--set-env-vars=DB_NAME=beatyesterday'
+      - '--set-env-vars=DB_USERNAME=postgres'
+      - '--set-env-vars=DB_HOST=$_DB_CONNECTION_NAME'
+      - '--set-secrets=DB_PASSWORD=db-password:latest'
+      - '--set-secrets=STRAVA_CLIENT_ID=strava-client-id:latest'
+      - '--set-secrets=STRAVA_CLIENT_SECRET=strava-client-secret:latest'
+      - '--set-secrets=STRAVA_REFRESH_TOKEN=strava-refresh-token:latest'
+      - '--max-instances=3'
+      - '--min-instances=0'
+      - '--memory=512Mi'
+      - '--timeout=60s'
+      - '--port=8080'
+
+# Substitutions (can be overridden via --substitutions flag)
+substitutions:
+  _DB_CONNECTION_NAME: 'PROJECT_ID:us-central1:beatyesterday-db'  # Replace with actual connection name
+
+# Images to be pushed to Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/beat-yesterday:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/beat-yesterday:latest'
+
+# Build timeout (max 30 minutes)
+timeout: 1800s
+
+# Options
+options:
+  # Use high-performance machine type for faster builds
+  machineType: 'E2_HIGHCPU_8'
+
+  # Logging configuration
+  logging: CLOUD_LOGGING_ONLY
+
+  # Enable Docker layer caching for faster subsequent builds
+  # (requires Kaniko or Cloud Build's default Docker builder)
+  dynamic_substitutions: true

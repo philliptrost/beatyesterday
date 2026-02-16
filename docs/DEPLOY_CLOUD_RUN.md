@@ -2,12 +2,19 @@
 
 Google Cloud Run is a fully managed serverless platform that runs containerized applications. This guide walks you through deploying Beat Yesterday to Cloud Run with Cloud SQL PostgreSQL.
 
+> **Quick Start:** For an interactive, guided deployment experience, use the included helper script: `./scripts/deploy-gcp.sh` (see end of guide for details)
+
 ## Prerequisites
 
 - Google Cloud Platform account
 - `gcloud` CLI installed and configured
+  - **Windows:** Download from [Google Cloud SDK installer](https://cloud.google.com/sdk/docs/install-windows)
+  - **macOS:** Install via Homebrew: `brew install --cask google-cloud-sdk`
+  - **Linux:** Follow [installation guide](https://cloud.google.com/sdk/docs/install-linux)
 - Strava API credentials (Client ID, Client Secret, Refresh Token)
 - Project with billing enabled
+
+> **Windows Users:** After installing gcloud CLI, restart your terminal or PowerShell to ensure `gcloud` is in your PATH.
 
 ## Cost Estimate
 
@@ -185,31 +192,27 @@ gcloud run deploy beat-yesterday \
 
 ## Automatic Deployments with Cloud Build
 
-Create `.cloudbuild.yaml` for CI/CD:
+A complete `cloudbuild.yaml` configuration file is included in the repository root. It defines a full CI/CD pipeline that:
+- Builds the Docker image (with layer caching for faster builds)
+- Pushes to Google Container Registry
+- Deploys to Cloud Run with all necessary environment variables and secrets
 
-```yaml
-steps:
-  # Build Docker image
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/beat-yesterday', '.']
+**Option 1: One-command deployment using cloudbuild.yaml**
 
-  # Push to Container Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/beat-yesterday']
+```bash
+# Get your Cloud SQL connection name
+export CONNECTION_NAME=$(gcloud sql instances describe beatyesterday-db \
+  --format='value(connectionName)')
 
-  # Deploy to Cloud Run
-  - name: 'gcr.io/cloud-builders/gcloud'
-    args:
-      - 'run'
-      - 'deploy'
-      - 'beat-yesterday'
-      - '--image=gcr.io/$PROJECT_ID/beat-yesterday'
-      - '--region=us-central1'
-      - '--platform=managed'
-
-images:
-  - 'gcr.io/$PROJECT_ID/beat-yesterday'
+# Deploy using Cloud Build
+gcloud builds submit \
+  --config cloudbuild.yaml \
+  --substitutions=_DB_CONNECTION_NAME="$CONNECTION_NAME"
 ```
+
+This single command handles the entire build and deployment process.
+
+**Option 2: Automatic deployments on git push**
 
 Then set up a build trigger:
 
@@ -301,6 +304,43 @@ gcloud run services update beat-yesterday \
 ### Token Refresh Issues with Multiple Instances
 
 If you see intermittent 401 errors when Cloud Run scales to multiple instances, you need to implement the database-backed token cache (covered in Phase 4 of the implementation plan).
+
+### Windows-Specific Issues
+
+**gcloud command not found**
+- Ensure you've restarted your terminal/PowerShell after installation
+- Check `gcloud` is in your PATH: run `echo $env:PATH` (PowerShell) or `echo %PATH%` (CMD)
+- Re-run the installer if needed
+
+**Permission errors when creating secrets**
+- Run PowerShell or CMD as Administrator
+- Verify you have necessary IAM permissions in your GCP project
+
+**Line ending issues with scripts**
+- If you see `^M` or carriage return errors, convert line endings:
+  ```powershell
+  # PowerShell
+  (Get-Content .\scripts\deploy-gcp.sh) | Set-Content -NoNewline .\scripts\deploy-gcp.sh
+  ```
+- Or use Git Bash instead of PowerShell to run bash scripts
+
+**Echo command differences**
+- Windows CMD/PowerShell `echo` adds newlines. Use the format shown in the guide:
+  ```bash
+  echo -n "your_value" | gcloud secrets create secret-name --data-file=-
+  ```
+- The `-n` flag prevents extra newlines in your secrets
+
+## Deployment Helper Script (Optional)
+
+For a guided, interactive deployment experience, use the helper script:
+
+```bash
+# From repository root (use Git Bash on Windows)
+./scripts/deploy-gcp.sh
+```
+
+This script walks you through each step with validation and helpful prompts.
 
 ## Cleanup
 
