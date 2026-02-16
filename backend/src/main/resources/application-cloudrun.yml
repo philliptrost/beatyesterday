@@ -1,0 +1,43 @@
+# Cloud Run specific configuration
+# Activated with: SPRING_PROFILES_ACTIVE=cloudrun
+
+spring:
+  datasource:
+    # Cloud SQL Proxy connection via Unix socket
+    # DB_HOST should be the connection name: PROJECT_ID:REGION:INSTANCE_NAME
+    url: jdbc:postgresql:///${DB_NAME:beatyesterday}?host=/cloudsql/${DB_HOST}&user=${DB_USERNAME:postgres}&password=${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+logging:
+  level:
+    root: WARN
+    com.beatyesterday: INFO
+    org.springframework.web: INFO
+    org.springframework.security: WARN
+    org.hibernate: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true

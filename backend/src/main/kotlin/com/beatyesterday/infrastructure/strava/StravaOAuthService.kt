@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service
 import org.springframework.web.client.RestClient
 
 /**
- * Manages Strava OAuth2 tokens. Caches the access token in memory for the session.
+ * Manages Strava OAuth2 tokens. Uses pluggable cache (in-memory for dev, database for production).
  * Strava tokens expire after 6 hours.
  */
 @Service
@@ -16,19 +16,19 @@ class StravaOAuthService(
     @Value("\${strava.client-secret}") private val clientSecret: String,
     @Value("\${strava.refresh-token}") private val refreshToken: String,
     @Value("\${strava.api-base-url}") private val baseUrl: String,
+    private val tokenCache: StravaTokenCache
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
     private val restClient = RestClient.create()
-    // Simple in-memory cache -- fine for single-instance MVP.
-    // For multi-instance deployment, move to Redis or DB.
-    private var cachedAccessToken: String? = null
+    // Use client ID as athlete identifier for single-tenant MVP
+    private val athleteId = clientId
 
     /**
      * Gets a valid access token, refreshing if needed.
-     * Strava access tokens expire after 6 hours, but we cache for the session.
+     * Strava access tokens expire after 6 hours. Uses cache to avoid unnecessary refreshes.
      */
     fun getAccessToken(): String {
-        cachedAccessToken?.let { return it }
+        tokenCache.get(athleteId)?.let { return it }
 
         logger.info("Refreshing Strava access token...")
         val response = restClient.post()
@@ -46,7 +46,7 @@ class StravaOAuthService(
             .body(Map::class.java) as Map<String, Any>
 
         val token = response["access_token"] as String
-        cachedAccessToken = token
+        tokenCache.set(athleteId, token)
         logger.info("Strava access token refreshed successfully")
         return token
     }
@@ -82,6 +82,6 @@ class StravaOAuthService(
     }
 
     fun clearCache() {
-        cachedAccessToken = null
+        tokenCache.clear(athleteId)
     }
 }

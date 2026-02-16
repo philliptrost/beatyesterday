@@ -3,7 +3,8 @@ spring:
     name: beat-yesterday
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:beatyesterday}
+    # Support both DATABASE_URL (Railway/Heroku) and component-based config (local)
+    url: ${DATABASE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:beatyesterday}}
     username: ${DB_USERNAME:beatyesterday}
     password: ${DB_PASSWORD:beatyesterday}
     driver-class-name: org.postgresql.Driver
@@ -28,3 +29,14 @@ strava:
   client-secret: ${STRAVA_CLIENT_SECRET:}
   refresh-token: ${STRAVA_REFRESH_TOKEN:}
   api-base-url: https://www.strava.com
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
