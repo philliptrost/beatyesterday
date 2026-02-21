@@ -8,12 +8,14 @@ import com.beatyesterday.web.dto.ActivitySummaryDto
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.server.ResponseStatusException
 
 /**
  * REST endpoints for browsing activities. Supports server-side pagination
@@ -25,6 +27,13 @@ class ActivityController(
     private val activityRepository: ActivityRepository,
 ) {
 
+    companion object {
+        private val ALLOWED_SORT_FIELDS = setOf(
+            "startDateTime", "sportType", "name", "distanceKm", "elevationM",
+            "averageSpeedKmh", "movingTimeSeconds", "averageHeartRate", "kudoCount", "calories",
+        )
+    }
+
     // Query params match what Spring Data Pageable expects — the frontend controls
     // page, size, sort field, and direction.
     @GetMapping
@@ -35,6 +44,10 @@ class ActivityController(
         @RequestParam(defaultValue = "desc") direction: String,
         @RequestParam(required = false) sportType: String?,
     ): Page<ActivitySummaryDto> {
+        if (sort !in ALLOWED_SORT_FIELDS) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid sort field: $sort. Allowed: $ALLOWED_SORT_FIELDS")
+        }
+
         val sortDirection = if (direction == "asc") Sort.Direction.ASC else Sort.Direction.DESC
         val pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort))
 

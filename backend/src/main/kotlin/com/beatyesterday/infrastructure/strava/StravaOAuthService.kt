@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestClient
+import java.time.Instant
 
 /**
  * Manages Strava OAuth2 tokens. Caches the access token in memory for the session.
@@ -22,13 +23,22 @@ class StravaOAuthService(
     // Simple in-memory cache -- fine for single-instance MVP.
     // For multi-instance deployment, move to Redis or DB.
     private var cachedAccessToken: String? = null
+    private var tokenExpiresAt: Long = 0 // Unix epoch seconds from Strava's expires_at
 
     /**
-     * Gets a valid access token, refreshing if needed.
-     * Strava access tokens expire after 6 hours, but we cache for the session.
+     * Gets a valid access token, refreshing if expired or missing.
+     * Strava access tokens expire after 6 hours; we track expiry via the
+     * expires_at field returned by the Strava token endpoint.
      */
+    @Synchronized
     fun getAccessToken(): String {
-        cachedAccessToken?.let { return it }
+        cachedAccessToken?.let { token ->
+            // Refresh 60 seconds before actual expiry to avoid edge-case failures
+            if (Instant.now().epochSecond < tokenExpiresAt - 60) {
+                return token
+            }
+            logger.info("Strava access token expired, refreshing...")
+        }
 
         logger.info("Refreshing Strava access token...")
         val response = restClient.post()
@@ -46,8 +56,10 @@ class StravaOAuthService(
             .body(Map::class.java) as Map<String, Any>
 
         val token = response["access_token"] as String
+        val expiresAt = (response["expires_at"] as Number).toLong()
         cachedAccessToken = token
-        logger.info("Strava access token refreshed successfully")
+        tokenExpiresAt = expiresAt
+        logger.info("Strava access token refreshed, expires at $expiresAt")
         return token
     }
 
@@ -83,5 +95,6 @@ class StravaOAuthService(
 
     fun clearCache() {
         cachedAccessToken = null
+        tokenExpiresAt = 0
     }
 }

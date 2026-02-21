@@ -43,47 +43,74 @@ class StravaApiClient(
         return authorizedGet("/gear/$gearId")
     }
 
+    private val maxRetries = 3
+
     // Attaches the OAuth Bearer token to every request. Handles rate limiting
-    // (429 -> wait 60s and retry) and not-found (404 -> return empty).
+    // (429 -> wait 60s, max 3 retries), unauthorized (401 -> refresh token once),
+    // and not-found (404 -> return empty).
     private fun authorizedGet(path: String): Map<String, Any?> {
-        return try {
-            restClient.get()
-                .uri("$apiBase$path")
-                .header("Authorization", "Bearer ${oauthService.getAccessToken()}")
-                .retrieve()
-                .body(object : ParameterizedTypeReference<Map<String, Any?>>() {})
-                ?: emptyMap()
-        } catch (e: HttpClientErrorException) {
-            if (e.statusCode == HttpStatus.TOO_MANY_REQUESTS) {
-                logger.warn("Strava rate limit reached. Waiting 60 seconds...")
-                Thread.sleep(60_000)
-                return authorizedGet(path)
+        var tokenRefreshed = false
+        for (attempt in 0..maxRetries) {
+            try {
+                return restClient.get()
+                    .uri("$apiBase$path")
+                    .header("Authorization", "Bearer ${oauthService.getAccessToken()}")
+                    .retrieve()
+                    .body(object : ParameterizedTypeReference<Map<String, Any?>>() {})
+                    ?: emptyMap()
+            } catch (e: HttpClientErrorException) {
+                if (e.statusCode == HttpStatus.TOO_MANY_REQUESTS && attempt < maxRetries) {
+                    logger.warn("Strava rate limit reached (attempt ${attempt + 1}/$maxRetries). Waiting 60 seconds...")
+                    Thread.sleep(60_000)
+                    continue
+                }
+                if (e.statusCode == HttpStatus.UNAUTHORIZED && !tokenRefreshed) {
+                    logger.warn("Strava returned 401, refreshing token and retrying...")
+                    oauthService.clearCache()
+                    tokenRefreshed = true
+                    continue
+                }
+                if (e.statusCode == HttpStatus.NOT_FOUND) {
+                    logger.warn("Strava resource not found: $path")
+                    return emptyMap()
+                }
+                throw e
             }
-            if (e.statusCode == HttpStatus.NOT_FOUND) {
-                logger.warn("Strava resource not found: $path")
-                return emptyMap()
-            }
-            throw e
         }
+        throw IllegalStateException("Strava API failed after $maxRetries retries for $path")
     }
 
     // Separate method from authorizedGet because of Java type erasure — ParameterizedTypeReference
     // needs the exact generic type (List<Map<...>> vs Map<...>) to deserialize correctly.
     private fun authorizedGetList(path: String): List<Map<String, Any?>> {
-        return try {
-            restClient.get()
-                .uri("$apiBase$path")
-                .header("Authorization", "Bearer ${oauthService.getAccessToken()}")
-                .retrieve()
-                .body(object : ParameterizedTypeReference<List<Map<String, Any?>>>() {})
-                ?: emptyList()
-        } catch (e: HttpClientErrorException) {
-            if (e.statusCode == HttpStatus.TOO_MANY_REQUESTS) {
-                logger.warn("Strava rate limit reached. Waiting 60 seconds...")
-                Thread.sleep(60_000)
-                return authorizedGetList(path)
+        var tokenRefreshed = false
+        for (attempt in 0..maxRetries) {
+            try {
+                return restClient.get()
+                    .uri("$apiBase$path")
+                    .header("Authorization", "Bearer ${oauthService.getAccessToken()}")
+                    .retrieve()
+                    .body(object : ParameterizedTypeReference<List<Map<String, Any?>>>() {})
+                    ?: emptyList()
+            } catch (e: HttpClientErrorException) {
+                if (e.statusCode == HttpStatus.TOO_MANY_REQUESTS && attempt < maxRetries) {
+                    logger.warn("Strava rate limit reached (attempt ${attempt + 1}/$maxRetries). Waiting 60 seconds...")
+                    Thread.sleep(60_000)
+                    continue
+                }
+                if (e.statusCode == HttpStatus.UNAUTHORIZED && !tokenRefreshed) {
+                    logger.warn("Strava returned 401, refreshing token and retrying...")
+                    oauthService.clearCache()
+                    tokenRefreshed = true
+                    continue
+                }
+                if (e.statusCode == HttpStatus.NOT_FOUND) {
+                    logger.warn("Strava resource not found: $path")
+                    return emptyList()
+                }
+                throw e
             }
-            throw e
         }
+        throw IllegalStateException("Strava API failed after $maxRetries retries for $path")
     }
 }
