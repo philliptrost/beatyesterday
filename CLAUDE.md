@@ -7,7 +7,8 @@ Strava analytics dashboard — import activities from Strava and visualize perfo
 - **Backend:** Kotlin 2.1 / Spring Boot 3.4 / JDK 21 / Gradle 8.12
 - **Frontend:** React 19 / TypeScript 5.7 / Vite 6 / Tailwind CSS 3.4 / Recharts 2.15
 - **Database:** PostgreSQL 16 (Flyway migrations)
-- **Testing:** JUnit 5 + MockK, H2 in-memory DB (no tests written yet)
+- **Testing:** JUnit 5 + MockK, H2 in-memory DB
+- **Deployment:** Google Cloud Run (container image from multi-stage Dockerfile)
 
 ## Commands
 
@@ -22,10 +23,24 @@ cd frontend && npm install              # Install deps
 cd frontend && npm run dev              # Start on :5173 (proxies /api → :8080)
 cd frontend && npm run build            # tsc + vite production build
 
-# Full stack
-docker-compose up -d                    # PostgreSQL
+# Full stack (local)
+docker-compose up -d                    # PostgreSQL + app (builds from Dockerfile)
 docker build -t beat-yesterday .        # Multi-stage: Node 22 → Gradle/JDK 21 → JRE 21 Alpine
+
+# Deploy to Google Cloud Run
+gcloud run deploy beat-yesterday --source . --region <REGION> --allow-unauthenticated
 ```
+
+## Deployment (Google Cloud Run)
+
+The app runs on **Google Cloud Run** using the multi-stage `Dockerfile` (frontend build → backend build → JRE runtime).
+
+- **Port:** Cloud Run sets `PORT` env var automatically; `application.yml` reads it via `${PORT:8080}`
+- **Strava secrets:** Set as environment variables (or Secret Manager references) on the Cloud Run service
+- **Database:** Connect to Cloud SQL for PostgreSQL via the Cloud Run "Cloud SQL connections" integration
+  - Set `DB_HOST` to the Cloud SQL Unix socket path: `/cloudsql/PROJECT_ID:REGION:INSTANCE_NAME`
+  - Or use private IP with Cloud SQL Auth Proxy
+- **No extra config files needed** — Cloud Run deploys directly from the Dockerfile
 
 ## Architecture
 
@@ -77,6 +92,7 @@ React SPA → REST Controllers → DTOs → Use Cases → Domain Models → Repo
 | `STRAVA_CLIENT_SECRET` | — | **yes** |
 | `STRAVA_REFRESH_TOKEN` | — | **yes** |
 | `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USERNAME` / `DB_PASSWORD` | localhost / 5432 / beatyesterday / beatyesterday / beatyesterday | no |
+| `PORT` | 8080 | no (Cloud Run sets this automatically) |
 
 ## Strava API Quirks
 
@@ -105,4 +121,4 @@ These are important when touching import or domain code:
 - **Synchronous import** — POST `/api/import` blocks until complete
 - **In-memory token cache** — StravaOAuthService; needs Redis/DB for multi-instance
 - **Dashboard aggregation in Kotlin** — loads up to 10K activities into memory instead of SQL aggregation
-- **No tests yet** — test infrastructure is wired but no test files exist
+- **Single Cloud Run instance** — no Redis/shared cache for token storage across instances
