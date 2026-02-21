@@ -44,6 +44,7 @@ class StravaApiClient(
     }
 
     private val maxRetries = 3
+    private val retryDelayMs: Long = 60_000
 
     // Attaches the OAuth Bearer token to every request. Handles rate limiting
     // (429 -> wait 60s, max 3 retries), unauthorized (401 -> refresh token once),
@@ -61,7 +62,7 @@ class StravaApiClient(
             } catch (e: HttpClientErrorException) {
                 if (e.statusCode == HttpStatus.TOO_MANY_REQUESTS && attempt < maxRetries) {
                     logger.warn("Strava rate limit reached (attempt ${attempt + 1}/$maxRetries). Waiting 60 seconds...")
-                    Thread.sleep(60_000)
+                    Thread.sleep(retryDelayMs)
                     continue
                 }
                 if (e.statusCode == HttpStatus.UNAUTHORIZED && !tokenRefreshed) {
@@ -95,7 +96,7 @@ class StravaApiClient(
             } catch (e: HttpClientErrorException) {
                 if (e.statusCode == HttpStatus.TOO_MANY_REQUESTS && attempt < maxRetries) {
                     logger.warn("Strava rate limit reached (attempt ${attempt + 1}/$maxRetries). Waiting 60 seconds...")
-                    Thread.sleep(60_000)
+                    Thread.sleep(retryDelayMs)
                     continue
                 }
                 if (e.statusCode == HttpStatus.UNAUTHORIZED && !tokenRefreshed) {
