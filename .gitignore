@@ -22,3 +22,6 @@ Thumbs.db
 # Environment
 .env
 .env.local
+
+# JVM crash logs
+hs_err_pid*.log
